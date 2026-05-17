@@ -400,6 +400,10 @@
   }
   $('#publishBtn').addEventListener('click', publish);
   $('#digestAdminBtn').addEventListener('click', () => { window.open('index.html#digest', '_blank'); });
+  const lockBtn = $('#lockBtn');
+  if (lockBtn) lockBtn.addEventListener('click', () => {
+    if (window.KG_AUTH && window.KG_AUTH.lock) window.KG_AUTH.lock();
+  });
 
   /* ---------- Initial render ---------- */
   resetTeacherForm();
