@@ -287,8 +287,12 @@
   });
 
   /* ---------- Init ---------- */
-  renderRooms();
-  renderUpcoming();
+  function render() {
+    renderRooms();
+    renderUpcoming();
+  }
+  // Override'lar geldikten sonra render
+  window.KG.loadOverrides().then(render);
   // Boarding visible by default
   show('boarding');
 })();

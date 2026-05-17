@@ -231,5 +231,41 @@ window.KG = (function () {
     fallback: 'Seni duydum. Gemide her oda bir nota; senin notana en yakın yer hangisi olabilir? Aşağıdaki seçeneklerden başlayabilirsin ya da “reiki, tantra, ses, su, kundalini, beden, yaratım, atölye” yazabilirsin.'
   };
 
-  return { rooms, events, captain };
+  // Override katmanı: hocalar oda bazında ve etkinlik listesi tamamen
+  // değiştirilebilir. Önce repo'daki data-overrides.json, sonra localStorage
+  // (admin paneli) uygulanır. Boş/eksik alanlar varsayılanı korur.
+  function applyOverrides(ov) {
+    if (!ov || typeof ov !== 'object') return;
+    if (ov.teachers && typeof ov.teachers === 'object') {
+      rooms.forEach(r => {
+        if (Array.isArray(ov.teachers[r.id])) r.teachers = ov.teachers[r.id];
+      });
+    }
+    if (Array.isArray(ov.events)) {
+      events.length = 0;
+      ov.events.forEach(e => events.push(e));
+    }
+  }
+
+  // Override'ı dosyadan + localStorage'tan toplayıp uygula
+  async function loadOverrides() {
+    try {
+      const res = await fetch('data-overrides.json', { cache: 'no-store' });
+      if (res.ok) applyOverrides(await res.json());
+    } catch (_) {}
+    try {
+      const local = localStorage.getItem('kg_overrides');
+      if (local) applyOverrides(JSON.parse(local));
+    } catch (_) {}
+  }
+
+  // Admin için "varsayılan + uygulanmış override" durumunu dışa ver
+  function snapshot() {
+    return {
+      teachers: Object.fromEntries(rooms.map(r => [r.id, r.teachers.map(t => ({ ...t }))])),
+      events: events.map(e => ({ ...e }))
+    };
+  }
+
+  return { rooms, events, captain, applyOverrides, loadOverrides, snapshot };
 })();

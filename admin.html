@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#06061a" />
+  <title>Kozmik Gemi · Kaptan Köprüsü Yönetim</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { padding-bottom: 40px; }
+    .admin-shell { max-width: 880px; margin: 0 auto; padding: 24px 18px 40px; }
+    .admin-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .admin-head h1 { font-size: 20px; letter-spacing: .15em; background: linear-gradient(120deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .admin-sub { color: var(--ink-mute); font-size: 12px; margin-top: 2px; letter-spacing: .1em; text-transform: uppercase; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tabs button { background: rgba(255,255,255,0.04); border: 1px solid var(--line); color: var(--ink-dim); padding: 8px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; }
+    .tabs button.active { background: linear-gradient(120deg, var(--accent), var(--accent-2)); color: #0a0a22; border-color: transparent; font-weight: 600; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; margin-bottom: 14px; }
+    .card h3 { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+    .grid { display: grid; gap: 10px; }
+    @media (min-width: 640px) { .grid.cols-2 { grid-template-columns: 1fr 1fr; } .grid.cols-3 { grid-template-columns: 2fr 2fr 1fr; } }
+    label { display: block; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--ink-mute); margin-bottom: 6px; }
+    input, select, textarea { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--line); color: var(--ink); padding: 11px 12px; border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 70px; }
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .row-actions .btn { padding: 10px 16px; font-size: 13px; }
+    .row-actions .btn.danger { background: rgba(255, 90, 120, 0.12); color: #ff9eb3; border: 1px solid rgba(255, 90, 120, 0.4); }
+    .row-actions .btn.danger:hover { background: rgba(255, 90, 120, 0.2); }
+    .list { display: flex; flex-direction: column; gap: 8px; }
+    .item { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; background: rgba(255,255,255,0.025); border: 1px solid var(--line); border-radius: 10px; }
+    .item h6 { margin: 0; font-size: 14px; color: var(--ink); font-family: 'Cinzel', serif; letter-spacing: .05em; }
+    .item .meta { color: var(--ink-dim); font-size: 12px; margin-top: 3px; }
+    .item .ctl { display: flex; gap: 6px; }
+    .ctl button { padding: 6px 10px; font-size: 12px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--line); color: var(--ink); cursor: pointer; }
+    .ctl button:hover { background: rgba(255,255,255,0.08); }
+    .ctl button.danger { color: #ff9eb3; border-color: rgba(255,90,120,0.4); }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 18px; }
+    .toolbar .btn { padding: 10px 16px; font-size: 13px; }
+    .hint { background: rgba(255, 210, 138, 0.08); border: 1px solid rgba(255, 210, 138, 0.3); color: var(--ink-dim); padding: 12px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; }
+    .hint code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(120deg, var(--accent), var(--accent-2)); color: #0a0a22; padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: 13px; box-shadow: var(--shadow); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 100; }
+    .toast.show { opacity: 1; transform: translate(-50%, -8px); }
+    .empty { color: var(--ink-mute); text-align: center; padding: 20px; font-size: 13px; }
+    a.back { color: var(--ink-dim); text-decoration: none; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="nebula" aria-hidden="true"></div>
+
+  <div class="admin-shell">
+    <div class="admin-head">
+      <a class="back" href="index.html">← Gemiye dön</a>
+      <div style="margin-left:auto;text-align:right">
+        <h1>YÖNETİM KÖPRÜSÜ</h1>
+        <div class="admin-sub">Hocalar · Etkinlikler</div>
+      </div>
+    </div>
+
+    <div class="hint">
+      Buradaki değişiklikler önce <strong>tarayıcına</strong> kaydedilir. Tüm ziyaretçilere yansıması için “JSON İndir”e bas, dosyayı repoda <code>data-overrides.json</code> adıyla yükle ve commit et.
+    </div>
+
+    <div class="toolbar">
+      <button class="btn primary" id="saveLocal">💾 Tarayıcıya Kaydet</button>
+      <button class="btn ghost" id="exportJson">⬇ JSON İndir</button>
+      <label class="btn ghost" style="cursor:pointer;margin:0">
+        ⬆ JSON Yükle <input id="importJson" type="file" accept="application/json" style="display:none" />
+      </label>
+      <button class="btn ghost" id="resetAll">↺ Sıfırla</button>
+    </div>
+
+    <div class="tabs">
+      <button data-tab="teachers" class="active">Hocalar</button>
+      <button data-tab="events">Etkinlikler</button>
+    </div>
+
+    <!-- Teachers panel -->
+    <section class="panel active" id="panel-teachers">
+      <div class="card">
+        <h3>Oda Seç</h3>
+        <select id="roomPick"></select>
+      </div>
+
+      <div class="card">
+        <h3 id="teacherFormTitle">Yeni Hoca Ekle</h3>
+        <form id="teacherForm" class="grid cols-2">
+          <input type="hidden" id="tIndex" value="-1" />
+          <div><label>Ad Soyad</label><input id="tName" required placeholder="Ayla Deniz" /></div>
+          <div><label>Ünvan / Rol</label><input id="tRole" required placeholder="Usui Reiki Master" /></div>
+          <div><label>Telefon</label><input id="tPhone" required placeholder="+90 5XX XXX XX XX" /></div>
+          <div><label>Adres</label><input id="tAddr" required placeholder="Mahalle, İlçe / İl" /></div>
+          <div class="row-actions" style="grid-column:1/-1">
+            <button type="submit" class="btn primary">Kaydet</button>
+            <button type="button" class="btn ghost" id="tCancel">İptal</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Bu Odanın Hocaları</h3>
+        <div class="list" id="teachersList"></div>
+      </div>
+    </section>
+
+    <!-- Events panel -->
+    <section class="panel" id="panel-events">
+      <div class="card">
+        <h3 id="eventFormTitle">Yeni Etkinlik Ekle</h3>
+        <form id="eventForm" class="grid cols-2">
+          <input type="hidden" id="eId" value="" />
+          <div><label>Başlık</label><input id="eTitle" required placeholder="Dolunay Gong Banyosu" /></div>
+          <div><label>Oda</label><select id="eRoom" required></select></div>
+          <div><label>Tarih · Saat</label><input id="eDate" type="datetime-local" required /></div>
+          <div><label>Etiket</label><input id="eTag" required placeholder="Ses Şifası" /></div>
+          <div style="grid-column:1/-1"><label>Yer</label><input id="eWhere" required placeholder="İstanbul · Kuzguncuk Bahçe" /></div>
+          <div style="grid-column:1/-1"><label>Hoca</label><input id="eTeacher" required placeholder="Aslı Tunç" /></div>
+          <div class="row-actions" style="grid-column:1/-1">
+            <button type="submit" class="btn primary">Kaydet</button>
+            <button type="button" class="btn ghost" id="eCancel">İptal</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Tüm Etkinlikler (Tarih Sıralı)</h3>
+        <div class="list" id="eventsList"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="data.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
