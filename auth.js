@@ -4,7 +4,11 @@
   const SESSION_KEY = 'kg_admin_unlocked';
 
   // Daha önce bu oturumda açıldıysa atla
-  if (sessionStorage.getItem(SESSION_KEY) === '1') return;
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    // window.KG_AUTH'u yine de yayınla (kilitle butonu için)
+    expose();
+    return;
+  }
 
   // Yardımcılar
   async function pbkdf2(password, saltB64) {
@@ -22,6 +26,17 @@
     return btoa(String.fromCharCode(...a));
   }
 
+  // Uzak şifre (paylaşılan): admin-config.json
+  async function loadRemoteConfig() {
+    try {
+      const res = await fetch('admin-config.json', { cache: 'no-store' });
+      if (!res.ok) return null;
+      const j = await res.json();
+      if (j && j.salt && j.hash) return j;
+    } catch (_) {}
+    return null;
+  }
+
   // Stil
   const style = document.createElement('style');
   style.textContent = `
@@ -37,7 +52,6 @@
     .auth-card .link-btn { display: block; margin: 14px auto 0; font-size: 12px; }
     .auth-err { color: #ff9eb3; font-size: 12px; margin: -4px 0 8px; min-height: 16px; }
     body.locked { overflow: hidden; }
-    .admin-shell { filter: blur(0); }
     body.locked .admin-shell { filter: blur(14px); pointer-events: none; user-select: none; }
   `;
   document.head.appendChild(style);
@@ -62,19 +76,26 @@
   `;
 
   document.body.classList.add('locked');
-  // DOM hazır olduğunda overlay'i ekle
   function attach() { document.body.appendChild(overlay); }
   if (document.body) attach();
   else document.addEventListener('DOMContentLoaded', attach, { once: true });
 
-  const hasPw = !!localStorage.getItem(HASH_KEY);
-  // Setup modu
-  if (!hasPw) {
+  // Önce uzak (paylaşılan) config'i kontrol et — tüm editörler için tek doğruluk
+  const remote = await loadRemoteConfig();
+  // Setup modu: ne uzak ne yerel şifre var
+  const localHash = localStorage.getItem(HASH_KEY);
+  const setupMode = !remote && !localHash;
+
+  if (setupMode) {
     setTimeout(() => {
-      overlay.querySelector('#authMsg').textContent = 'İlk kullanım — yeni bir şifre belirle (en az 6 karakter)';
-      overlay.querySelector('#pw1').placeholder = 'Yeni şifre';
+      overlay.querySelector('#authMsg').innerHTML = 'İlk kullanım — yeni bir şifre belirle.<br/><small style="font-size:11px;color:var(--ink-mute)">Diğer editörlerin de girebilmesi için sonra "Yayınla" demeyi unutma.</small>';
+      overlay.querySelector('#pw1').placeholder = 'Yeni şifre (en az 6 karakter)';
       overlay.querySelector('#pw2').hidden = false;
       overlay.querySelector('#forgotBtn').hidden = true;
+    }, 0);
+  } else if (remote) {
+    setTimeout(() => {
+      overlay.querySelector('#authMsg').textContent = 'Şifreni gir (paylaşılan)';
     }, 0);
   }
 
@@ -84,36 +105,38 @@
     if (msg) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3500);
   }
 
-  function unlock() {
-    sessionStorage.setItem(SESSION_KEY, '1');
-    document.body.classList.remove('locked');
-    overlay.remove();
-    // Kilitle butonu için global hook
+  function expose() {
     window.KG_AUTH = {
       lock() {
         sessionStorage.removeItem(SESSION_KEY);
         location.reload();
       },
-      changePassword: changePassword
+      // Yeni şifre üret (admin panelden çağrılır) — hem yerel kaydeder hem hash döndürür
+      async generate(password) {
+        if (!password || password.length < 6) throw new Error('Şifre en az 6 karakter olmalı');
+        const salt = randomSalt();
+        const hash = await pbkdf2(password, salt);
+        localStorage.setItem(SALT_KEY, salt);
+        localStorage.setItem(HASH_KEY, hash);
+        return { salt, hash, iterations: 200000, algo: 'PBKDF2-SHA256', updated_at: new Date().toISOString() };
+      },
+      // Mevcut şifreyi doğrula
+      async verify(password) {
+        const r = await loadRemoteConfig();
+        const salt = (r && r.salt) || localStorage.getItem(SALT_KEY);
+        const hash = (r && r.hash) || localStorage.getItem(HASH_KEY);
+        if (!salt || !hash) return false;
+        const h = await pbkdf2(password, salt);
+        return h === hash;
+      }
     };
   }
 
-  async function changePassword() {
-    const cur = prompt('Mevcut şifreni gir:');
-    if (!cur) return;
-    const salt = localStorage.getItem(SALT_KEY);
-    const stored = localStorage.getItem(HASH_KEY);
-    if (!salt || !stored) return alert('Şifre bulunamadı');
-    const h = await pbkdf2(cur, salt);
-    if (h !== stored) return alert('Mevcut şifre yanlış');
-    const n1 = prompt('Yeni şifre (en az 6):'); if (!n1) return;
-    if (n1.length < 6) return alert('Çok kısa');
-    const n2 = prompt('Yeni şifre (tekrar):'); if (n1 !== n2) return alert('Eşleşmedi');
-    const ns = randomSalt();
-    const nh = await pbkdf2(n1, ns);
-    localStorage.setItem(SALT_KEY, ns);
-    localStorage.setItem(HASH_KEY, nh);
-    alert('Şifre güncellendi');
+  function unlock() {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.body.classList.remove('locked');
+    overlay.remove();
+    expose();
   }
 
   // Form submit
@@ -122,26 +145,48 @@
     ev.preventDefault();
     const p1 = overlay.querySelector('#pw1').value;
     const p2 = overlay.querySelector('#pw2').value;
-    const hasPwNow = !!localStorage.getItem(HASH_KEY);
-    if (!hasPwNow) {
-      if (p1.length < 6) return err('Şifre en az 6 karakter olmalı');
-      if (p1 !== p2) return err('Şifreler eşleşmiyor');
-      const s = randomSalt();
-      const h = await pbkdf2(p1, s);
-      localStorage.setItem(SALT_KEY, s);
-      localStorage.setItem(HASH_KEY, h);
-      unlock();
-    } else {
-      const s = localStorage.getItem(SALT_KEY);
-      const h = await pbkdf2(p1, s);
-      if (h === localStorage.getItem(HASH_KEY)) unlock();
-      else err('Yanlış şifre');
+
+    // Uzak şifre varsa o belirleyici
+    const r = await loadRemoteConfig();
+    if (r) {
+      const h = await pbkdf2(p1, r.salt);
+      if (h === r.hash) {
+        // Yerel cache'i de güncelle ki ileride aynı tarayıcıda hızlı çalışsın
+        localStorage.setItem(SALT_KEY, r.salt);
+        localStorage.setItem(HASH_KEY, r.hash);
+        unlock();
+      } else err('Yanlış şifre');
+      return;
     }
+
+    // Yerel şifre var mı
+    const lh = localStorage.getItem(HASH_KEY);
+    if (lh) {
+      const ls = localStorage.getItem(SALT_KEY);
+      const h = await pbkdf2(p1, ls);
+      if (h === lh) unlock();
+      else err('Yanlış şifre');
+      return;
+    }
+
+    // Setup
+    if (p1.length < 6) return err('Şifre en az 6 karakter olmalı');
+    if (p1 !== p2) return err('Şifreler eşleşmiyor');
+    const s = randomSalt();
+    const h = await pbkdf2(p1, s);
+    localStorage.setItem(SALT_KEY, s);
+    localStorage.setItem(HASH_KEY, h);
+    unlock();
+    // Setup sonrası kullanıcıya yayınla hatırlatması
+    setTimeout(() => {
+      alert('Şifre belirlendi.\n\nDiğer editörlerin de bu şifreyle girebilmesi için yönetim panelinde "🔑 Şifreyi Yayınla" butonuna basman gerekir.');
+    }, 400);
   });
 
   document.addEventListener('click', (ev) => {
     if (!ev.target.matches('#forgotBtn')) return;
-    if (!confirm('Şifreni unuttuysan sıfırlanır. Mevcut tarayıcıdaki ayarlar (override\'lar, GitHub token) korunur.\n\nDevam edilsin mi?')) return;
+    const r = !!sessionStorage.getItem('kg_remote_ck');
+    if (!confirm('Mevcut tarayıcıdaki şifre cache\'i silinecek. Eğer şifre paylaşılan olarak yayınlandıysa hâlâ paylaşılan şifreyle girersin.\n\nDevam edilsin mi?')) return;
     localStorage.removeItem(SALT_KEY);
     localStorage.removeItem(HASH_KEY);
     location.reload();

@@ -405,6 +405,49 @@
     if (window.KG_AUTH && window.KG_AUTH.lock) window.KG_AUTH.lock();
   });
 
+  /* ---------- Şifre belirleme — tek tık ---------- */
+  async function setSharedPassword() {
+    const cfg = getCfg();
+    if (!cfg.token) {
+      alert('Önce ⚙ Yayın Ayarları\'ndan GitHub token\'ını ekle.\n(Şifreyi paylaşılan kılmak için repoya yazıyoruz.)');
+      openCfg();
+      return;
+    }
+    const pw1 = prompt('Yeni paylaşılan şifre (en az 6 karakter):');
+    if (pw1 === null) return;
+    if (!pw1 || pw1.length < 6) { alert('Şifre en az 6 karakter olmalı.'); return; }
+    const pw2 = prompt('Tekrar gir:');
+    if (pw2 === null) return;
+    if (pw1 !== pw2) { alert('Şifreler eşleşmiyor.'); return; }
+    if (!window.KG_AUTH || !window.KG_AUTH.generate) { alert('Auth modülü yüklenemedi.'); return; }
+    const btn = $('#passwordBtn');
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = '… Yayınlanıyor';
+    try {
+      const payload = await window.KG_AUTH.generate(pw1);
+      // admin-config.json olarak commit et — data-overrides ile aynı PAT akışı
+      let sha;
+      const path = 'admin-config.json';
+      const getRes = await ghRequest(cfg, 'GET', `${encodeURI(path)}?ref=${encodeURIComponent(cfg.branch)}`);
+      if (getRes.ok) { sha = (await getRes.json()).sha; }
+      else if (getRes.status !== 404) throw new Error(`GET ${getRes.status}`);
+      const body = {
+        message: `kg: paylaşılan yönetim şifresi güncellendi (${new Date().toISOString()})`,
+        content: b64encode(JSON.stringify(payload, null, 2)),
+        branch: cfg.branch
+      };
+      if (sha) body.sha = sha;
+      const putRes = await ghRequest(cfg, 'PUT', encodeURI(path), body);
+      if (!putRes.ok) throw new Error(`PUT ${putRes.status}: ${await putRes.text()}`);
+      toast('Şifre yayınlandı');
+      alert('Şifre yayınlandı. Diğer editörler bu şifreyle yönetim paneline girebilir.\n\nŞifreyi onlara güvenli bir kanaldan iletmen yeter.');
+    } catch (e) {
+      alert('Yayınlanamadı: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = orig;
+    }
+  }
+  $('#passwordBtn').addEventListener('click', setSharedPassword);
+
   /* ---------- Initial render ---------- */
   resetTeacherForm();
   resetEventForm();
