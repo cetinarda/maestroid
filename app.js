@@ -43,7 +43,7 @@
   $('#stardate2').textContent = stardate;
 
   /* ---------- Navigation ---------- */
-  const screens = { boarding: $('#boarding'), bridge: $('#bridge'), room: $('#room'), events: $('#events'), sakin: $('#sakin') };
+  const screens = { boarding: $('#boarding'), bridge: $('#bridge'), room: $('#room'), events: $('#events') };
   function show(name) {
     Object.entries(screens).forEach(([k, el]) => el.classList.toggle('active', k === name));
     $('#tabbar').style.display = (name === 'boarding') ? 'none' : 'grid';
@@ -60,29 +60,6 @@
   }
 
   $('#boardBtn').addEventListener('click', () => { show('bridge'); renderUpcoming(); });
-
-  // Sakin · hizalanma
-  // CSP sakin.life tarafında kozmikgemi.netlify.app/kozmikgemi.com için açıldı.
-  // Sakin, iframe'i kendi tarafında (window.self !== window.top) tespit edip
-  // "Tam deneyim için sakin.life →" banner'ını gösteriyor.
-  // Fallback'i otomatik tetiklemiyoruz — yavaş yükleme yanlış pozitif yaratıyor.
-  // Kullanıcı isterse topbar'daki "yeni sekmede aç" ikonunu kullanır.
-  $('#sakinOpen').addEventListener('click', () => {
-    show('sakin');
-    const fr = $('#sakinFrame');
-    $('#sakinFallback').hidden = true;
-    // Ekran görünür olduktan sonra src'yi ata — tembel yükleme tuzaklarını önler
-    if (fr.dataset.loaded !== '1') {
-      fr.src = 'https://sakin.life/';
-      fr.dataset.loaded = '1';
-      fr.addEventListener('load', () => {
-        try {
-          console.log('[Kozmik Gemi] Sakin iframe load fired. Inner location accessible:',
-            'cross-origin (expected blocked)');
-        } catch (e) {}
-      }, { once: true });
-    }
-  });
 
   /* ---------- Rooms ---------- */
   function roomCardEl(r) {

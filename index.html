@@ -68,7 +68,7 @@
 
     <section class="section">
       <h3 class="section-title">Hizalanma Pusulası</h3>
-      <button class="sakin-card" id="sakinOpen" aria-label="Sakin uygulamasını aç">
+      <a class="sakin-card" href="https://sakin.life" target="_blank" rel="noopener noreferrer" aria-label="Sakin uygulamasını yeni sekmede aç">
         <span class="sakin-glow"></span>
         <div class="sakin-icon">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -81,8 +81,8 @@
           <h4>Sakin · Hizalanma</h4>
           <p>Geminin günlük pusulası. Nefes, niyet ve sessizlikle frekansını ayarla.</p>
         </div>
-        <span class="sakin-cta">Aç →</span>
-      </button>
+        <span class="sakin-cta">Aç ↗</span>
+      </a>
     </section>
 
     <nav class="section">
@@ -133,35 +133,6 @@
     <div class="events-wrap">
       <div class="filter-row" id="eventFilters"></div>
       <div class="events" id="allEvents"></div>
-    </div>
-  </section>
-
-  <!-- Sakin screen -->
-  <section id="sakin" class="screen" aria-label="Sakin · Hizalanma">
-    <header class="topbar">
-      <button class="icon-btn" data-back="bridge" aria-label="Geri">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      </button>
-      <span class="topbar-title">Sakin · Hizalanma</span>
-      <a class="icon-btn" id="sakinExternal" href="https://sakin.life" target="_blank" rel="noopener" aria-label="Yeni sekmede aç">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7M10 14L21 3M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6"/></svg>
-      </a>
-    </header>
-    <div class="sakin-intro">
-      <p class="overline">Kozmik Gemi'nin günlük pusulası</p>
-      <h2>Sakin — Hizalanma Uygulaması</h2>
-      <p class="lede">Gemideki yolculuğun günlük pratiği. Nefes, niyet, sessizlik. Açıldığında üç soluk al; pusula seni hizalar.</p>
-      <p class="lede" style="font-size:12px;color:var(--ink-mute);margin-top:8px">
-        Bu pencere anonim moddur — geçmişin ve ayarların burada saklanmaz. Tam deneyim için Sakin'i yeni sekmede aç.
-      </p>
-    </div>
-    <div class="iframe-wrap">
-      <iframe id="sakinFrame" title="Sakin · Hizalanma" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-      <div class="iframe-fallback" id="sakinFallback" hidden>
-        <p>Sakin şu an açılamadı. Bağlantını kontrol et veya tam siteye geç.</p>
-        <a class="btn primary" href="https://sakin.life" target="_blank" rel="noopener noreferrer">Yeni sekmede aç →</a>
-        <small style="color:var(--ink-mute);font-size:11px;margin-top:8px">Origin: <span id="originHere"></span></small>
-      </div>
     </div>
   </section>
 
