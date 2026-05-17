@@ -69,7 +69,19 @@
   // Kullanıcı isterse topbar'daki "yeni sekmede aç" ikonunu kullanır.
   $('#sakinOpen').addEventListener('click', () => {
     show('sakin');
+    const fr = $('#sakinFrame');
     $('#sakinFallback').hidden = true;
+    // Ekran görünür olduktan sonra src'yi ata — tembel yükleme tuzaklarını önler
+    if (fr.dataset.loaded !== '1') {
+      fr.src = 'https://sakin.life/';
+      fr.dataset.loaded = '1';
+      fr.addEventListener('load', () => {
+        try {
+          console.log('[Kozmik Gemi] Sakin iframe load fired. Inner location accessible:',
+            'cross-origin (expected blocked)');
+        } catch (e) {}
+      }, { once: true });
+    }
   });
 
   /* ---------- Rooms ---------- */
