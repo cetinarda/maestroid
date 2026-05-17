@@ -65,6 +65,25 @@
       </button>
     </div>
 
+    <section class="section">
+      <h3 class="section-title">Hizalanma Pusulası</h3>
+      <button class="sakin-card" id="sakinOpen" aria-label="Sakin uygulamasını aç">
+        <span class="sakin-glow"></span>
+        <div class="sakin-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>
+            <path d="M12 7a5 5 0 0 1 5 5"/>
+          </svg>
+        </div>
+        <div class="sakin-text">
+          <h4>Sakin · Hizalanma</h4>
+          <p>Geminin günlük pusulası. Nefes, niyet ve sessizlikle frekansını ayarla.</p>
+        </div>
+        <span class="sakin-cta">Aç →</span>
+      </button>
+    </section>
+
     <nav class="section">
       <h3 class="section-title">Gemi Odaları</h3>
       <div class="rooms" id="rooms"></div>
@@ -73,7 +92,10 @@
     <section class="section">
       <div class="row-between">
         <h3 class="section-title">Yaklaşan Etkinlikler</h3>
-        <button class="link-btn" id="viewAllEvents">Tümü →</button>
+        <div style="display:flex;gap:10px">
+          <button class="link-btn" id="digestBtn">📤 Bülten</button>
+          <button class="link-btn" id="viewAllEvents">Tümü →</button>
+        </div>
       </div>
       <div class="events" id="upcomingEvents"></div>
     </section>
@@ -113,6 +135,31 @@
     </div>
   </section>
 
+  <!-- Sakin screen -->
+  <section id="sakin" class="screen" aria-label="Sakin · Hizalanma">
+    <header class="topbar">
+      <button class="icon-btn" data-back="bridge" aria-label="Geri">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <span class="topbar-title">Sakin · Hizalanma</span>
+      <a class="icon-btn" id="sakinExternal" href="https://sakin.life" target="_blank" rel="noopener" aria-label="Yeni sekmede aç">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7M10 14L21 3M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6"/></svg>
+      </a>
+    </header>
+    <div class="sakin-intro">
+      <p class="overline">Kozmik Gemi'nin günlük pusulası</p>
+      <h2>Sakin — Hizalanma Uygulaması</h2>
+      <p class="lede">Gemideki yolculuğun günlük pratiği. Nefes, niyet, sessizlik. Açıldığında üç soluk al; pusula seni hizalar.</p>
+    </div>
+    <div class="iframe-wrap">
+      <iframe id="sakinFrame" src="https://sakin.life" title="Sakin · Hizalanma" allow="autoplay; fullscreen; microphone" referrerpolicy="no-referrer-when-downgrade" loading="lazy"></iframe>
+      <div class="iframe-fallback" id="sakinFallback" hidden>
+        <p>Sakin uygulaması burada açılmadı. Bazı tarayıcılar gömme önler.</p>
+        <a class="btn primary" href="https://sakin.life" target="_blank" rel="noopener">Yeni sekmede aç →</a>
+      </div>
+    </div>
+  </section>
+
   <!-- Captain modal -->
   <div id="captainModal" class="modal" aria-hidden="true">
     <div class="modal-backdrop" data-close></div>
@@ -149,6 +196,28 @@
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- Share sheet -->
+  <div id="shareSheet" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-share-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="captain-header">
+        <h3 id="shareTitle" style="margin:0">Paylaş</h3>
+        <button class="icon-btn ml-auto" data-share-close aria-label="Kapat">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div style="padding:14px 0 6px">
+        <label style="display:block;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:6px">Paylaşılacak metin</label>
+        <textarea id="shareText" style="width:100%;min-height:140px;background:rgba(255,255,255,0.04);border:1px solid var(--line);color:var(--ink);padding:12px;border-radius:12px;font-family:inherit;font-size:14px;outline:none;line-height:1.5"></textarea>
+        <small style="color:var(--ink-mute);font-size:11px">Metni düzenleyebilirsin — aşağıdaki butonlar güncel metni gönderir.</small>
+      </div>
+      <div class="share-grid" id="shareGrid"></div>
+      <div style="text-align:center;color:var(--ink-mute);font-size:11px;padding:10px 0 4px">
+        İpucu: Mobilde “Cihaz Paylaş” Instagram Story / Hikaye dahil tüm uygulamaları açar.
+      </div>
     </div>
   </div>
 

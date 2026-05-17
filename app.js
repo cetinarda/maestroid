@@ -43,7 +43,7 @@
   $('#stardate2').textContent = stardate;
 
   /* ---------- Navigation ---------- */
-  const screens = { boarding: $('#boarding'), bridge: $('#bridge'), room: $('#room'), events: $('#events') };
+  const screens = { boarding: $('#boarding'), bridge: $('#bridge'), room: $('#room'), events: $('#events'), sakin: $('#sakin') };
   function show(name) {
     Object.entries(screens).forEach(([k, el]) => el.classList.toggle('active', k === name));
     $('#tabbar').style.display = (name === 'boarding') ? 'none' : 'grid';
@@ -60,6 +60,18 @@
   }
 
   $('#boardBtn').addEventListener('click', () => { show('bridge'); renderUpcoming(); });
+
+  // Sakin · hizalanma
+  $('#sakinOpen').addEventListener('click', () => {
+    show('sakin');
+    // Iframe yüklenemezse fallback göster
+    const fr = $('#sakinFrame');
+    let loaded = false;
+    fr.addEventListener('load', () => { loaded = true; }, { once: true });
+    setTimeout(() => {
+      if (!loaded) $('#sakinFallback').hidden = false;
+    }, 4500);
+  });
 
   /* ---------- Rooms ---------- */
   function roomCardEl(r) {
@@ -151,11 +163,122 @@
         <p style="margin-top:2px">${e.teacher}</p>
       </div>
       <span class="event-tag">${e.tag}</span>
+      <button class="event-share" aria-label="Paylaş" title="Paylaş">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+      </button>
     `;
     el.style.cursor = 'pointer';
     el.addEventListener('click', () => openRoom(e.roomId));
+    el.querySelector('.event-share').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      openShareSheet(eventShareText(e), `${e.title} · Paylaş`);
+    });
     return el;
   }
+
+  /* ---------- Share ---------- */
+  function siteUrl() {
+    try { return localStorage.getItem('kg_site_url') || window.location.origin || 'https://kozmikgemi.com'; }
+    catch (_) { return 'https://kozmikgemi.com'; }
+  }
+  function eventShareText(e) {
+    const d = new Date(e.date);
+    const dateStr = d.toLocaleString('tr-TR', { day: '2-digit', month: 'long', weekday: 'long', hour: '2-digit', minute: '2-digit' });
+    return `✨ ${e.title}\n🗓 ${dateStr}\n📍 ${e.where}\n🎙 ${e.teacher} · ${e.tag}\n\nOrkestrada yerini al → ${siteUrl()}`;
+  }
+  function digestText(days = 7) {
+    const now = new Date();
+    const until = new Date(); until.setDate(until.getDate() + days);
+    const list = events
+      .filter(e => { const d = new Date(e.date); return d >= now && d <= until; })
+      .sort((a,b) => new Date(a.date) - new Date(b.date));
+    const header = days <= 7 ? '✨ Kozmik Gemi · Bu Haftanın Etkinlikleri ✨' :
+                   days <= 14 ? '✨ Kozmik Gemi · Önümüzdeki 2 Hafta ✨' :
+                                '✨ Kozmik Gemi · Önümüzdeki Etkinlikler ✨';
+    if (!list.length) return `${header}\n\nBu dönemde planlı etkinlik yok. Yeni ay yaklaşırken takvimi tekrar kontrol et 🌙\n\n${siteUrl()}`;
+    const lines = list.map(e => {
+      const d = new Date(e.date);
+      const dateStr = d.toLocaleString('tr-TR', { day: '2-digit', month: 'short', weekday: 'short', hour: '2-digit', minute: '2-digit' });
+      return `🌙 ${dateStr}\n   ${e.title}\n   📍 ${e.where} · 🎙 ${e.teacher}`;
+    });
+    return `${header}\n\n${lines.join('\n\n')}\n\nOrkestrada yerini al → ${siteUrl()}`;
+  }
+
+  function openShareSheet(text, title='Paylaş') {
+    $('#shareTitle').textContent = title;
+    $('#shareText').value = text;
+    renderShareGrid();
+    $('#shareSheet').classList.add('open');
+  }
+  function closeShareSheet() { $('#shareSheet').classList.remove('open'); }
+  $$('#shareSheet [data-share-close]').forEach(b => b.addEventListener('click', closeShareSheet));
+
+  function currentShareText() { return $('#shareText').value; }
+  function renderShareGrid() {
+    const grid = $('#shareGrid');
+    grid.innerHTML = '';
+    const url = siteUrl();
+    const targets = [
+      { id: 'wa', label: 'WhatsApp', icon: '🟢', cls: 'wa', go: () => window.open(`https://wa.me/?text=${encodeURIComponent(currentShareText())}`, '_blank') },
+      { id: 'tg', label: 'Telegram', icon: '✈', cls: 'tg', go: () => window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(currentShareText())}`, '_blank') },
+      { id: 'x', label: 'X', icon: '𝕏', cls: 'x', go: () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(currentShareText())}`, '_blank') },
+      { id: 'fb', label: 'Facebook', icon: 'f', cls: 'fb', go: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(currentShareText())}`, '_blank') },
+      { id: 'ig', label: 'Instagram', icon: '◎', cls: 'ig', go: async () => {
+          await copyText(currentShareText());
+          toast('Metin kopyalandı · Instagram açılıyor');
+          window.open('https://www.instagram.com/', '_blank');
+        } },
+      { id: 'em', label: 'E-posta', icon: '✉', cls: 'em', go: () => {
+          const t = currentShareText();
+          const subj = t.split('\n')[0].replace(/^[✨🌙]\s*/, '').slice(0, 80);
+          window.location.href = `mailto:?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(t)}`;
+        } },
+      { id: 'cp', label: 'Kopyala', icon: '⧉', cls: 'cp', go: async () => { await copyText(currentShareText()); toast('Kopyalandı'); } },
+    ];
+    if (navigator.share) {
+      targets.push({ id: 'ns', label: 'Cihaz Paylaş', icon: '↗', cls: 'ns', go: async () => {
+        try { await navigator.share({ text: currentShareText(), url: siteUrl() }); } catch (_) {}
+      } });
+    }
+    targets.forEach(t => {
+      const b = document.createElement('button');
+      b.className = 'share-btn';
+      b.innerHTML = `<span class="ic ${t.cls}">${t.icon}</span><span>${t.label}</span>`;
+      b.addEventListener('click', t.go);
+      grid.appendChild(b);
+    });
+  }
+  async function copyText(t) {
+    try { await navigator.clipboard.writeText(t); }
+    catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = t; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      ta.remove();
+    }
+  }
+  function toast(msg) {
+    let t = document.getElementById('kg-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'kg-toast';
+      t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#0a0a22;padding:10px 18px;border-radius:999px;font-weight:600;font-size:13px;box-shadow:var(--shadow);z-index:100;opacity:0;transition:opacity .2s';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg; t.style.opacity = 1;
+    clearTimeout(t._h); t._h = setTimeout(() => t.style.opacity = 0, 1800);
+  }
+
+  // Bülten butonu
+  $('#digestBtn').addEventListener('click', () => {
+    openShareSheet(digestText(7), 'Haftalık Bülten');
+  });
+  // Hash ile direkt aç (admin'den)
+  if (location.hash === '#digest') {
+    setTimeout(() => { show('bridge'); openShareSheet(digestText(7), 'Haftalık Bülten'); }, 200);
+  }
+  // Expose for admin or console
+  window.KG.share = { openShareSheet, eventShareText, digestText };
   function eventLine(e) {
     const d = new Date(e.date);
     return `<p style="display:flex;justify-content:space-between;gap:12px;border-top:1px dashed var(--line);padding-top:8px;margin-top:8px">

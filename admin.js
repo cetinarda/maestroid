@@ -399,6 +399,7 @@
     }
   }
   $('#publishBtn').addEventListener('click', publish);
+  $('#digestAdminBtn').addEventListener('click', () => { window.open('index.html#digest', '_blank'); });
 
   /* ---------- Initial render ---------- */
   resetTeacherForm();
