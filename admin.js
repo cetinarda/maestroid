@@ -279,9 +279,131 @@
 
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
+  /* ---------- Publish (GitHub API) ---------- */
+  const CFG_KEY = 'kg_publish_cfg';
+  const LAST_PUB = 'kg_last_publish';
+  const defaultCfg = { owner: 'cetinarda', repo: 'maestroid', branch: 'main', path: 'data-overrides.json', token: '' };
+  function getCfg() {
+    try { return { ...defaultCfg, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}') }; }
+    catch (_) { return { ...defaultCfg }; }
+  }
+  function saveCfg(cfg) { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
+
+  function showStatus() {
+    const el = $('#publishStatus');
+    const ts = localStorage.getItem(LAST_PUB);
+    const cfg = getCfg();
+    const bits = [];
+    bits.push(cfg.token ? '🔐 Token kayıtlı' : '⚠ Token yok — yayınlamak için ayarlardan ekle');
+    bits.push(`🎯 ${cfg.owner}/${cfg.repo}@${cfg.branch} · ${cfg.path}`);
+    if (ts) bits.push(`🕒 Son yayın: ${new Date(ts).toLocaleString('tr-TR')}`);
+    el.innerHTML = bits.join(' &nbsp;·&nbsp; ');
+  }
+
+  // Settings modal
+  function openCfg() {
+    const cfg = getCfg();
+    $('#cfgOwner').value = cfg.owner;
+    $('#cfgRepo').value = cfg.repo;
+    $('#cfgBranch').value = cfg.branch;
+    $('#cfgPath').value = cfg.path;
+    $('#cfgToken').value = cfg.token;
+    $('#cfgModal').classList.add('open');
+  }
+  function closeCfg() { $('#cfgModal').classList.remove('open'); }
+  $('#settingsBtn').addEventListener('click', openCfg);
+  $$('#cfgModal [data-cfg-close]').forEach(b => b.addEventListener('click', closeCfg));
+  $('#cfgSave').addEventListener('click', () => {
+    saveCfg({
+      owner: $('#cfgOwner').value.trim() || defaultCfg.owner,
+      repo: $('#cfgRepo').value.trim() || defaultCfg.repo,
+      branch: $('#cfgBranch').value.trim() || defaultCfg.branch,
+      path: $('#cfgPath').value.trim() || defaultCfg.path,
+      token: $('#cfgToken').value.trim()
+    });
+    closeCfg();
+    showStatus();
+    toast('Ayarlar kaydedildi');
+  });
+  $('#cfgClear').addEventListener('click', () => {
+    const cfg = getCfg();
+    cfg.token = '';
+    saveCfg(cfg);
+    $('#cfgToken').value = '';
+    showStatus();
+    toast('Token silindi');
+  });
+
+  // UTF-8 güvenli base64
+  function b64encode(s) {
+    return btoa(unescape(encodeURIComponent(s)));
+  }
+
+  async function ghRequest(cfg, method, path, body) {
+    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path}`;
+    const headers = {
+      'Accept': 'application/vnd.github+json',
+      'Authorization': `Bearer ${cfg.token}`,
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+    const opts = { method, headers };
+    if (body) { opts.body = JSON.stringify(body); headers['Content-Type'] = 'application/json'; }
+    return fetch(url, opts);
+  }
+
+  async function publish() {
+    const cfg = getCfg();
+    if (!cfg.token) { openCfg(); toast('Önce token ekle'); return; }
+    persist();
+    const btn = $('#publishBtn');
+    btn.disabled = true;
+    const origLabel = btn.textContent;
+    btn.textContent = '… Yayınlanıyor';
+    try {
+      // mevcut dosyanın sha'sını al (yoksa 404)
+      let sha = undefined;
+      const getRes = await ghRequest(cfg, 'GET', `${encodeURI(cfg.path)}?ref=${encodeURIComponent(cfg.branch)}`);
+      if (getRes.ok) {
+        const j = await getRes.json();
+        sha = j.sha;
+      } else if (getRes.status !== 404) {
+        const txt = await getRes.text();
+        throw new Error(`GET hatası ${getRes.status}: ${txt}`);
+      }
+      const content = JSON.stringify(state, null, 2);
+      const putBody = {
+        message: `kg: yönetim panosundan güncelle (${new Date().toISOString()})`,
+        content: b64encode(content),
+        branch: cfg.branch
+      };
+      if (sha) putBody.sha = sha;
+      const putRes = await ghRequest(cfg, 'PUT', encodeURI(cfg.path), putBody);
+      if (!putRes.ok) {
+        const txt = await putRes.text();
+        throw new Error(`PUT hatası ${putRes.status}: ${txt}`);
+      }
+      const j = await putRes.json();
+      localStorage.setItem(LAST_PUB, new Date().toISOString());
+      showStatus();
+      const commitUrl = j.commit && j.commit.html_url;
+      toast('Yayınlandı ✓');
+      if (commitUrl) {
+        const el = $('#publishStatus');
+        el.innerHTML += ` · <a href="${commitUrl}" target="_blank" rel="noopener" style="color:var(--accent-2)">commit'i gör →</a>`;
+      }
+    } catch (err) {
+      alert('Yayınlanamadı:\n\n' + err.message + '\n\nToken yetkilerini ve repo adını kontrol et.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origLabel;
+    }
+  }
+  $('#publishBtn').addEventListener('click', publish);
+
   /* ---------- Initial render ---------- */
   resetTeacherForm();
   resetEventForm();
   renderTeachers();
   renderEvents();
+  showStatus();
 })();
