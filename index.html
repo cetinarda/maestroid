@@ -150,15 +150,16 @@
       <p class="overline">Kozmik Gemi'nin günlük pusulası</p>
       <h2>Sakin — Hizalanma Uygulaması</h2>
       <p class="lede">Gemideki yolculuğun günlük pratiği. Nefes, niyet, sessizlik. Açıldığında üç soluk al; pusula seni hizalar.</p>
+      <p class="lede" style="font-size:12px;color:var(--ink-mute);margin-top:8px">
+        Bu pencere anonim moddur — geçmişin ve ayarların burada saklanmaz. Tam deneyim için Sakin'i yeni sekmede aç.
+      </p>
     </div>
     <div class="iframe-wrap">
-      <iframe id="sakinFrame" src="https://sakin.life" title="Sakin · Hizalanma" allow="autoplay; fullscreen; microphone" referrerpolicy="no-referrer-when-downgrade" loading="lazy"></iframe>
+      <iframe id="sakinFrame" src="https://sakin.life" title="Sakin · Hizalanma" allow="autoplay; fullscreen" referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe>
       <div class="iframe-fallback" id="sakinFallback" hidden>
-        <p>Sakin uygulaması burada açılmadı.</p>
-        <p style="font-size:12px;color:var(--ink-mute);max-width:380px;line-height:1.6">
-          Eğer sakin.life'ın CSP'sinde bu domain (<span id="originHere"></span>) listeli değilse iframe engellenir. Tarayıcıdan <strong>F12 → Console</strong>’da "Refused to frame" hatası görünüyorsa sebep budur.
-        </p>
-        <a class="btn primary" href="https://sakin.life" target="_blank" rel="noopener">Yeni sekmede aç →</a>
+        <p>Sakin şu an açılamadı. Bağlantını kontrol et veya tam siteye geç.</p>
+        <a class="btn primary" href="https://sakin.life" target="_blank" rel="noopener noreferrer">Yeni sekmede aç →</a>
+        <small style="color:var(--ink-mute);font-size:11px;margin-top:8px">Origin: <span id="originHere"></span></small>
       </div>
     </div>
   </section>

@@ -62,26 +62,20 @@
   $('#boardBtn').addEventListener('click', () => { show('bridge'); renderUpcoming(); });
 
   // Sakin · hizalanma
+  // CSP sakin.life tarafında kozmikgemi.netlify.app/kozmikgemi.com için açıldı.
+  // Sakin, iframe'i kendi tarafında (window.self !== window.top) tespit edip
+  // "Tam deneyim için sakin.life →" banner'ını gösteriyor; oturum anonim.
   $('#sakinOpen').addEventListener('click', () => {
     show('sakin');
     const fr = $('#sakinFrame');
     const fb = $('#sakinFallback');
     fb.hidden = true;
-    let loaded = false;
-    fr.addEventListener('load', () => {
-      loaded = true;
-      // Iframe yüklendi (CSP bloğunda da load fires; ama bu noktada içerik orada)
-      console.log('[Kozmik Gemi] Sakin iframe load event fired. Origin:', window.location.origin);
-    }, { once: true });
-    // Çok daha uzun bir guard: sadece tamamen ölüyse fallback'i göster
     const oh = document.getElementById('originHere');
     if (oh) oh.textContent = window.location.origin;
-    setTimeout(() => {
-      if (!loaded) {
-        console.warn('[Kozmik Gemi] Sakin iframe 12s içinde yüklenmedi.');
-        fb.hidden = false;
-      }
-    }, 12000);
+    let loaded = false;
+    fr.addEventListener('load', () => { loaded = true; }, { once: true });
+    // Sadece ağ tamamen ölüyse fallback. CSP doğru kurulu, normalde görünmez.
+    setTimeout(() => { if (!loaded) fb.hidden = false; }, 15000);
   });
 
   /* ---------- Rooms ---------- */
