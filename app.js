@@ -64,18 +64,12 @@
   // Sakin · hizalanma
   // CSP sakin.life tarafında kozmikgemi.netlify.app/kozmikgemi.com için açıldı.
   // Sakin, iframe'i kendi tarafında (window.self !== window.top) tespit edip
-  // "Tam deneyim için sakin.life →" banner'ını gösteriyor; oturum anonim.
+  // "Tam deneyim için sakin.life →" banner'ını gösteriyor.
+  // Fallback'i otomatik tetiklemiyoruz — yavaş yükleme yanlış pozitif yaratıyor.
+  // Kullanıcı isterse topbar'daki "yeni sekmede aç" ikonunu kullanır.
   $('#sakinOpen').addEventListener('click', () => {
     show('sakin');
-    const fr = $('#sakinFrame');
-    const fb = $('#sakinFallback');
-    fb.hidden = true;
-    const oh = document.getElementById('originHere');
-    if (oh) oh.textContent = window.location.origin;
-    let loaded = false;
-    fr.addEventListener('load', () => { loaded = true; }, { once: true });
-    // Sadece ağ tamamen ölüyse fallback. CSP doğru kurulu, normalde görünmez.
-    setTimeout(() => { if (!loaded) fb.hidden = false; }, 15000);
+    $('#sakinFallback').hidden = true;
   });
 
   /* ---------- Rooms ---------- */
