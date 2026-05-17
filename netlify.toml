@@ -1,0 +1,15 @@
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "interest-cohort=()"
+
+# data-overrides.json her seferinde taze çekilsin (admin'den yayınlandığında anında görünür)
+[[headers]]
+  for = "/data-overrides.json"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
